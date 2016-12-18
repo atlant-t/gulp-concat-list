@@ -1,0 +1,25 @@
+{
+  "name": "gulp-concat-list",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/atlant-t/gulp-concat-list.git"
+  },
+  "author": "Murzin Sergey",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/atlant-t/gulp-concat-list/issues"
+  },
+  "homepage": "https://github.com/atlant-t/gulp-concat-list#readme",
+  "dependencies": {
+    "minimatch": "^3.0.3",
+    "through2": "^2.0.3",
+    "vinyl": "^2.0.1",
+    "vinyl-fs": "^2.4.4"
+  }
+}
