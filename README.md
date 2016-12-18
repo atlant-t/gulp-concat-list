@@ -29,6 +29,7 @@ content:
     concatList([argument1, [argument2]])
 ```
 argument1 (string) — расширение файла, по умолчанию ".jsl"
+
 argument2 (boolean) — добавлять ли карту, по умолчанию false
 # Параметры файла
 ```
