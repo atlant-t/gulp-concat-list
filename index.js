@@ -119,7 +119,7 @@ Config.prototype.get_file = function() {
 }
 Config.prototype.get_sourceMap = function() {
 	
-	var files = this.isWrap ? [].concat(this.before, this.content, this.after) : that.content;
+	var files = this.isWrap ? [].concat(this.before, this.content, this.after) : this.content;
 	
 	var mapBuilder = new sourceMap.SourceMapGenerator({file: this.name, sourceRoot: '/scripts/'});
 	
