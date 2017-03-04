@@ -31,7 +31,8 @@ module.exports = function concatList(extname, isSourceMap) {
 		var res = regexp.exec(str);
 		var fn;
 		
-		var end = function end(){ 
+		var end = function end(err){
+			if (err) return cb(err)
 			var f = config.get_file();
 		//	if (config.isSourceMap) f.sourceMap = JSON.parse(config.get_sourceMap())
 		//	if (config.isSourceMap) f.sourceMap = config.get_sourceMap()
@@ -39,7 +40,8 @@ module.exports = function concatList(extname, isSourceMap) {
 			cb(null, f);
 		}.bind(this)
 		
-		var dowhile = function dowhile(){
+		var dowhile = function dowhile(err){
+			if (err) return end(err)
 			if (res) fn = res[1];
 			else return end();
 			
@@ -53,9 +55,7 @@ module.exports = function concatList(extname, isSourceMap) {
 					.replace(/^\s*|,*\s*$|\s*(,)\s*/g, "$1")
 					.split(/,/)
 					.map(function(item){
-						item = item.replace(/\"/, "\\\"")
-						item = JSON.parse("\"" + item + "\"")
-						if (+item) return +item;
+						if (!isNaN(+item) && item !== "") return +item;
 						if (item === "true" || item === "false") return item === "true";
 						return item;
 					});
@@ -96,7 +96,14 @@ function Config(file, isSourceMap) {
 
 Config.prototype.get_file = function() {
 	var that = this;
-	var files = that.isWrap ? [].concat(that.before, that.content, that.after) : that.content;
+	//var files = that.isWrap ? [].concat(that.before, that.content, that.after) : that.content;
+	
+	if (that.isWrap) {
+		that.concat.unshift(that.before);
+		that.concat.push(that.after)
+	}
+	var file = that.content;
+	
 	
 	var contents = [];
 	var separator = new Buffer(that.separator)
@@ -104,7 +111,8 @@ Config.prototype.get_file = function() {
 		contents.push(files[i].contents);
 		contents.push(separator);
 	}
-	contents.push(files[files.length - 1].contents);
+	if (file.length)
+		contents.push(files[files.length - 1].contents);
 	
 	if (that.isSourceMap) contents[contents.length] = new Buffer("\n//# sourceMappingURL=" + that.name + ".map" + "\n")
 	
@@ -117,6 +125,7 @@ Config.prototype.get_file = function() {
 	
 	return newFile;
 }
+
 Config.prototype.get_sourceMap = function() {
 	
 	var files = this.isWrap ? [].concat(this.before, this.content, this.after) : this.content;
@@ -166,25 +175,6 @@ Config.prototype.get_sourceMap = function() {
 				},
 				source: unixPath(files[i].path)
 			})
-			/*
-			console.log(
-				(files[i].stem || files[i].path) + ": "
-				+ "[" + (
-					lineOffset + line + 1
-				) + " "
-				+ (
-					(line + 1 === 1 ? columnOffset : 0) + rrr.index - lineIndex
-				) + "]"
-				+ "[" + (
-					line + 1
-				) + " "
-				+ (
-					rrr.index - lineIndex
-				) + "]"
-				+ " - " + JSON.stringify(rrr[0])
-				+ " - " + lineIndex + " + " + rrr.index + " : " + reg.lastIndex
-			);
-			*/
 			if (/\r?\n/.test(rrr[0][0] + rrr[0][1])/* === "\n"*/) {
 				lineIndex = reg.lastIndex;
 				line += rrr[0].split("\n").length - 1
@@ -221,12 +211,29 @@ Config.prototype.fn_folder = function(args, cb) {
 	this.folder = args[0];
 	cb()
 }
+
 Config.prototype.fn_name = function(args, cb) {
 	this.name = args[0];
 	cb()
 }
+
 Config.prototype.fn_content = function(args, cb) {
 //	console.dir(args.join(','))
+	
+	if (args.length === 1) {
+		this.content.push( new File({
+			cwd: "."
+			base: "."
+			path: "wrap-before",
+			stem: "wrap-before",
+			contents: new Buffer("\n")
+		}) )
+		return;
+	}
+	
+	for (let i = 0; i < args.length; i++)
+		args[i] = this.folder + "/" + args[i]
+	
 	var that = this;
 	function streamFn(file, enc, callback) {
 		that.content.push(file);
@@ -237,26 +244,29 @@ Config.prototype.fn_content = function(args, cb) {
 		callback();
 	}
 	
-	vfs.src(this.folder + "/{" + args.join(',') + "}")
+	vfs.src(args)
+		.on('error', function(err) {
+			cb(err)
+		})
 		.pipe(through2(streamFn, streamEnd));
 }
+
 Config.prototype.fn_wrapfn = function(args, cb) {
 	if (args.length === 0) return cb();
 	
-	if (typeof args[0] === "boolean") {
-		this.isWrap = args[0];
-		return cb();
-	}
+	if (!args[0]) return cb();
 	
 	this.isWrap = true;
 	
 	var params = [];
 	var argums = [];
 	
-	for (let i = 0, arr; i < args.length; i++) {
-		arr = args[i].split(/\s*->\s*/);
-		params[i] = arr[0];
-		argums[i] = arr[1] || String.fromCharCode(97 + i);
+	if (typeof args[0] !== "boolean") {
+		for (let i = 0, arr; i < args.length; i++) {
+			arr = args[i].split(/\s*->\s*/);
+			params[i] = arr[0];
+			argums[i] = arr[1] || String.fromCharCode(97 + i);
+		}
 	}
 	
 	this.before = new File({
@@ -280,6 +290,8 @@ Config.prototype.fn_sourceMap = function(args, cb) {
 	cb()
 }
 Config.prototype.fn_separator = function(args, cb) {
+	args[0] = args[0].replace(/\"/g, "\\\"");
+	args[0] = JSON.parse("\"" + args[0] + "\"");
 	this.separator = args[0];
 	cb()
 }
