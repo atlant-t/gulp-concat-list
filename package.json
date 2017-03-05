@@ -10,6 +10,11 @@
     "type": "git",
     "url": "git+https://github.com/atlant-t/gulp-concat-list.git"
   },
+  "keywords": [
+    "gulpplugin",
+    "concat",
+    "list"
+  ],
   "author": "Murzin Sergey",
   "license": "ISC",
   "bugs": {
