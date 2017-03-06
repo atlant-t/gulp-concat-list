@@ -222,8 +222,8 @@ Config.prototype.fn_content = function(args, cb) {
 	
 	if (args.length === 1) {
 		this.content.push( new File({
-			cwd: "."
-			base: "."
+			cwd: ".",
+			base: ".",
 			path: "wrap-before",
 			stem: "wrap-before",
 			contents: new Buffer("\n")
